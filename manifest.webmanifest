@@ -1,5 +1,5 @@
 {
-"ame": "J-Eye — Image to Text & Markdown",
+"name": "J-Eye — Image to Text & Markdown",
 "short_name": "J-Eye",
 "description": "Convert images, notes, tables, and code into formatted Text, Markdown, Word Docs, and PDF with exact text color preservation.",
 "start_url": "./index.html",
