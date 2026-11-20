@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="description" content="J-Eye — Convert images, notes, tables, and code into formatted Text, Markdown, PDF, and Docs with exact text color preservation." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="J-Eye" />
+  <title>J-Eye — Image to Text & Markdown</title>
+
+  <!-- PWA Manifest & App Icons -->
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Markdown Parser, Sanitizer, Syntax Highlighting, KaTeX, Mermaid, jsPDF & Tesseract Offline OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.6);
+    }
+
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printArea, #printArea * {
+        visibility: visible !important;
+      }
+      #printArea {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        padding: 24px !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        z-index: 99999 !important;
+      }
+    }
+
+    /* Rendered Preview Typography */
+    .markdown-body h1 { font-size: 1.65rem; font-weight: 700; margin-bottom: 0.75rem; margin-top: 1rem; border-bottom: 1px solid rgba(156,163,175,0.25); padding-bottom: 0.3rem; }
+    .markdown-body h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.6rem; margin-top: 1rem; }
+    .markdown-body h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; margin-top: 0.85rem; }
+    .markdown-body p { margin-bottom: 0.75rem; line-height: 1.65; }
+    .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .markdown-body li { margin-bottom: 0.25rem; }
+    .markdown-body blockquote { border-left: 4px solid #6366f1; padding-left: 1rem; color: #6b7280; font-style: italic; margin: 0.75rem 0; }
+    .dark .markdown-body blockquote { color: #9ca3af; }
+    .markdown-body code:not(pre code) { background: rgba(99, 102, 241, 0.12); color: #4f46e5; padding: 0.15rem 0.35rem; border-radius: 0.375rem; font-family: 'JetBrains Mono', monospace; font-size: 0.875em; }
+    .dark .markdown-body code:not(pre code) { background: rgba(129, 140, 248, 0.18); color: #a5b4fc; }
+    .markdown-body pre { background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; }
+    .markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .markdown-body th, .markdown-body td { border: 1px solid rgba(156, 163, 175, 0.3); padding: 0.5rem 0.75rem; text-align: left; }
+    .markdown-body th { background: rgba(99, 102, 241, 0.08); font-weight: 600; }
+    .markdown-body input[type="checkbox"] { margin-right: 0.5rem; accent-color: #6366f1; }
+    .markdown-body hr { border: 0; border-top: 1px solid rgba(156, 163, 175, 0.3); margin: 1.25rem 0; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight leading-none">J-Eye</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Image to Text & Markdown Converter</p>
+        </div>
+      </div>
+
+      <!-- Right Controls -->
+      <div class="flex items-center gap-2">
+        <button id="installAppBtn" type="button" title="Install J-Eye as an App" class="hidden inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Install App</span>
+        </button>
+
+        <button id="apiKeyBtn" type="button" title="Configure AI Provider & API Key" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+          </svg>
+          <span id="providerBadgeLabel" class="hidden sm:inline">AI / API Key</span>
+        </button>
+
+        <button id="historyBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="hidden sm:inline">History</span>
+          <span id="historyCount" class="px-1.5 py-0.2 rounded-full bg-indigo-600 text-white text-[10px]">0</span>
+        </button>
+
+        <button id="themeToggle" type="button" aria-label="Toggle Dark Mode" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+          <svg id="sunIcon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="moonIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- LEFT COLUMN: Image Input & Format Settings (5 cols on desktop) -->
+    <section class="lg:col-span-5 flex flex-col gap-5">
+      
+      <!-- Image Dropzone / Preview Card -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">1. Source Image</span>
+          <button id="clearImageBtn" type="button" class="hidden text-xs font-medium text-rose-600 hover:text-rose-700 dark:text-rose-400 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 transition">
+            Remove
+          </button>
+        </div>
+
+        <!-- Drop Area -->
+        <div id="dropZone" tabindex="0" class="relative group cursor-pointer rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 bg-slate-50/70 dark:bg-slate-950/50 transition-all min-h-[210px] flex flex-col items-center justify-center p-5 text-center overflow-hidden">
+          <input id="fileInput" type="file" accept="image/*" class="hidden" />
+          
+          <!-- Empty State Prompt -->
+          <div id="uploadPrompt" class="flex flex-col items-center gap-2.5">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Click to upload, drag & drop, or paste (<kbd class="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-800 rounded">Ctrl+V</kbd>)</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Supports PNG, JPG, WEBP screenshots, notes & documents</p>
+            </div>
+          </div>
+
+          <!-- Active Image Preview -->
+          <div id="imagePreviewWrapper" class="hidden w-full flex flex-col items-center">
+            <img id="imagePreview" alt="Uploaded source preview" class="max-h-60 w-auto rounded-lg object-contain shadow-sm" />
+            <p id="imageMeta" class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-mono"></p>
+          </div>
+        </div>
+
+        <!-- Quick Sample Generators -->
+        <div class="pt-1">
+          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-2">Try a sample image:</p>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-sample="notes" class="sample-btn px-2.5 py-2 rounded-xl text-xs font-medium bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-slate-800 dark:hover:bg-indigo-950/60 dark:hover:text-indigo-300 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition text-center">
+              📝 Text & Heading
+            </button>
+            <button type="button" data-sample="table" class="sample-btn px-2.5 py-2 rounded-xl text-xs font-medium bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-slate-800 dark:hover:bg-indigo-950/60 dark:hover:text-indigo-300 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition text-center">
+              📊 Invoice Table
+            </button>
+            <button type="button" data-sample="code" class="sample-btn px-2.5 py-2 rounded-xl text-xs font-medium bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-slate-800 dark:hover:bg-indigo-950/60 dark:hover:text-indigo-300 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition text-center">
+              💻 Code Snippet
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Format & Extraction Options Card -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 flex flex-col gap-4">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">2. Text & Markdown Format</span>
+        
+        <!-- Mode Selector Grid -->
+        <div id="modeGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button type="button" data-mode="normal" class="mode-btn active flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 dark:border-indigo-500">
+            <span class="text-base leading-none mt-0.5">📝</span>
+            <div>
+              <div class="text-xs font-semibold text-slate-900 dark:text-white">Text with Heading</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">Clean headings & paragraphs</div>
+            </div>
+          </button>
+
+          <button type="button" data-mode="standard" class="mode-btn flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-left transition">
+            <span class="text-base leading-none mt-0.5">📄</span>
+            <div>
+              <div class="text-xs font-semibold text-slate-900 dark:text-white">Heading, Para & Table</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">Headings, prose & tables</div>
+            </div>
+          </button>
+
+          <button type="button" data-mode="obsidian" class="mode-btn flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-left transition">
+            <span class="text-base leading-none mt-0.5">💎</span>
+            <div>
+              <div class="text-xs font-semibold text-slate-900 dark:text-white">Obsidian Note</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">YAML, tags & [[Wiki-Links]]</div>
+            </div>
+          </button>
+
+          <button type="button" data-mode="notion" class="mode-btn flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-left transition">
+            <span class="text-base leading-none mt-0.5">📓</span>
+            <div>
+              <div class="text-xs font-semibold text-slate-900 dark:text-white">Notion Page</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">Callouts, headings & tables</div>
+            </div>
+          </button>
+
+          <button type="button" data-mode="code" class="mode-btn flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-left transition">
+            <span class="text-base leading-none mt-0.5">💻</span>
+            <div>
+              <div class="text-xs font-semibold text-slate-900 dark:text-white">Code & Terminal</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">Syntax blocks & indent fix</div>
+            </div>
+          </button>
+
+          <button type="button" data-mode="mermaid" class="mode-btn flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-left transition">
+            <span class="text-base leading-none mt-0.5">🔀</span>
+            <div>
+              <div class="text-xs font-semibold text-slate-900 dark:text-white">Diagram & Math</div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">Mermaid charts & LaTeX</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- Post-Processing Toggles -->
+        <div class="flex flex-col gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Preserve exact text colors from image</span>
+            <input id="preserveColorToggle" type="checkbox" checked class="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Auto-fix OCR typos & broken line wraps</span>
+            <input id="autoFixToggle" type="checkbox" checked class="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Append TL;DR & Action Checklist (<code class="text-[11px]">- [ ]</code>)</span>
+            <input id="actionItemsToggle" type="checkbox" class="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
+          </label>
+        </div>
+
+        <!-- Custom Instructions Input -->
+        <div>
+          <input id="customPromptInput" type="text" placeholder="Optional instruction (e.g., 'Translate to Hindi' or 'Keep only headings')..." class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200" />
+        </div>
+
+        <!-- Inline Error Alert Banner -->
+        <div id="errorBanner" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-start justify-between gap-2">
+          <div class="flex items-start gap-2">
+            <span class="mt-0.5">⚠️</span>
+            <p id="errorBannerText" class="leading-relaxed break-words"></p>
+          </div>
+          <button id="closeErrorBanner" type="button" class="text-rose-500 hover:text-rose-700 font-bold px-1">✕</button>
+        </div>
+
+        <!-- Primary Convert Button -->
+        <button id="convertBtn" type="button" disabled class="w-full py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 transition-all">
+          <svg id="convertIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <svg id="loadingSpinner" class="w-4 h-4 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span id="convertBtnText">Convert Image</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: Editor & Live Rendered Preview (7 cols on desktop) -->
+    <section class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-[540px] overflow-hidden">
+      
+      <!-- Toolbar Header -->
+      <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-900/60">
+        
+        <!-- View Switcher Tabs -->
+        <div class="inline-flex p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800">
+          <button id="tabSplit" type="button" class="view-tab hidden md:inline-flex px-3 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm transition">
+            Split
+          </button>
+          <button id="tabPreview" type="button" class="view-tab px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">
+            Preview
+          </button>
+          <button id="tabRaw" type="button" class="view-tab px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">
+            Markdown
+          </button>
+        </div>
+
+        <!-- Copy & Export Actions -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button id="copyTextBtn" type="button" title="Copy formatted text with headings for OneNote, Keep & Docs" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Copy Text</span>
+          </button>
+
+          <button id="copyBtn" type="button" title="Copy raw Markdown for any note app" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span>Copy MD</span>
+          </button>
+
+          <button id="downloadBtn" type="button" title="Download .md file" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>.md</span>
+          </button>
+
+          <button id="downloadDocsBtn" type="button" title="Download as Word / Google Docs (.doc)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition">
+            <span>📄 Docs</span>
+          </button>
+
+          <button id="downloadPdfBtn" type="button" title="Download as formatted PDF (.pdf)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition">
+            <span>📕 PDF</span>
+          </button>
+
+          <button id="obsidianBtn" type="button" title="Send directly to Obsidian app" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 transition">
+            <span>💎 Obsidian</span>
+          </button>
+
+          <button id="notionBtn" type="button" title="Copy clean Markdown formatted for Notion paste" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition">
+            <span>📓 Notion</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor / Preview Workspace Body -->
+      <div id="workspaceContainer" class="flex-1 grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-800 overflow-hidden">
+        
+        <!-- Raw Markdown Textarea Pane -->
+        <div id="rawPane" class="flex flex-col h-full min-h-[300px]">
+          <div class="px-3 py-1.5 bg-slate-50 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+            <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">MARKDOWN SOURCE</span>
+            <span id="wordCount" class="text-[10px] font-mono text-slate-400">0 words · 0 chars</span>
+          </div>
+          <textarea id="markdownEditor" spellcheck="false" placeholder="Your extracted text and Markdown will appear here. You can edit directly..." class="flex-1 w-full p-4 bg-transparent font-mono text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200 focus:outline-none resize-none"></textarea>
+        </div>
+
+        <!-- Live Rendered Preview Pane -->
+        <div id="previewPane" class="flex flex-col h-full min-h-[300px] bg-slate-50/30 dark:bg-slate-950/20 overflow-hidden">
+          <div class="px-3 py-1.5 bg-slate-50 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+            <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">FORMATTED PREVIEW</span>
+            <span class="text-[10px] text-indigo-500 font-medium">Headings · Tables · Code</span>
+          </div>
+          <div id="markdownPreview" class="markdown-body flex-1 p-4 sm:p-5 overflow-y-auto text-sm text-slate-800 dark:text-slate-200">
+            <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 dark:text-slate-500 py-12">
+              <p class="text-xs">Upload an image and click <strong>Convert Image</strong> to see your formatted text with headings here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- History Drawer Modal -->
+  <div id="historyModal" class="fixed inset-0 z-50 hidden bg-slate-950/50 backdrop-blur-sm flex justify-end">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 h-full border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <h3 class="font-bold text-base">Conversion History</h3>
+        <div class="flex items-center gap-2">
+          <button id="clearHistoryBtn" type="button" class="text-xs text-rose-600 hover:underline px-2 py-1">Clear All</button>
+          <button id="closeHistoryBtn" type="button" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">✕</button>
+        </div>
+      </div>
+      <div id="historyList" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+        <p class="text-xs text-slate-400 text-center py-10">No saved conversions yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Multi-Provider AI API Key Modal -->
+  <div id="apiKeyModal" class="fixed inset-0 z-50 hidden bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base">AI Provider & API Key</h3>
+        <button id="closeApiKeyModal" type="button" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">✕</button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        Choose your preferred Vision AI provider or leave blank to use the built-in offline structure engine. Keys are stored locally in your browser.
+      </p>
+
+      <div class="flex flex-col gap-3">
+        <div>
+          <label for="aiProviderSelect" class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">AI Provider</label>
+          <select id="aiProviderSelect" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200">
+            <option value="gemini">Google Gemini (Free Tier Available)</option>
+            <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+            <option value="anthropic">Anthropic Claude (Claude 3.5 / 3.7 Sonnet)</option>
+            <option value="openrouter">OpenRouter (Any Vision Model)</option>
+            <option value="custom">Custom OpenAI-Compatible Endpoint</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="customApiKeyInput" class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">API Key</label>
+          <input id="customApiKeyInput" type="password" placeholder="AIzaSy... (Leave blank for built-in offline OCR)" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200" />
+        </div>
+
+        <div>
+          <label for="customModelInput" class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Model Name (Optional)</label>
+          <input id="customModelInput" type="text" placeholder="gemini-3-flash-preview" class="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200" />
+        </div>
+
+        <div id="customEndpointWrapper" class="hidden">
+          <label for="customEndpointInput" class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">API Endpoint URL</label>
+          <input id="customEndpointInput" type="text" placeholder="https://api.groq.com/openai/v1/chat/completions" class="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200" />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button id="clearApiKeyBtn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Reset Default</button>
+        <button id="saveApiKeyBtn" type="button" class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Non-intrusive Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium shadow-lg border border-slate-700 flex items-center gap-2">
+      <span id="toastIcon">✅</span>
+      <span id="toastMessage">Copied to clipboard!</span>
+    </div>
+  </div>
+
+  <!-- Export & Download Fallback Modal -->
+  <div id="exportModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h3 id="exportModalTitle" class="font-bold text-base">Export Document</h3>
+        <button id="closeExportModal" type="button" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">✕</button>
+      </div>
+      <p id="exportModalDesc" class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        Your file is ready. Choose how you want to save or transfer it:
+      </p>
+      <div class="flex flex-col gap-2.5">
+        <button id="nativeShareFileBtn" type="button" class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm transition">
+          📤 Share / Save to Files or Drive (Mobile & App)
+        </button>
+        <a id="directDownloadLink" href="#" download="document.doc" class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-center text-slate-800 dark:text-slate-100 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition">
+          ⬇️ Direct Download Link
+        </a>
+        <button id="copyForDocsBtn" type="button" class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 transition">
+          📋 Copy Formatted for Google Docs / Word
+        </button>
+      </div>
+      <button id="closeExportModalBottom" type="button" class="w-full py-2 px-4 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- Hidden Print Container -->
+  <div id="printArea" class="hidden markdown-body"></div>
+
+  <script>
+    /**
+     * J-Eye — Installable PWA Image to Text, Markdown, Docs & PDF Converter
+     */
+
+    // --- State Management ---
+    const state = {
+      imageBase64: null,
+      imageMimeType: null,
+      imageName: 'document',
+      mode: 'normal',
+      viewMode: window.innerWidth >= 768 ? 'split' : 'preview',
+      userOverrodeView: false,
+      history: []
+    };
+
+    try {
+      const saved = localStorage.getItem('jeye_history');
+      if (saved) state.history = JSON.parse(saved);
+    } catch (e) {
+      state.history = [];
+    }
+
+    // --- DOM Elements ---
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const imagePreviewWrapper = document.getElementById('imagePreviewWrapper');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageMeta = document.getElementById('imageMeta');
+    const clearImageBtn = document.getElementById('clearImageBtn');
+    const convertBtn = document.getElementById('convertBtn');
+    const convertBtnText = document.getElementById('convertBtnText');
+    const convertIcon = document.getElementById('convertIcon');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    const markdownEditor = document.getElementById('markdownEditor');
+    const markdownPreview = document.getElementById('markdownPreview');
+    const wordCount = document.getElementById('wordCount');
+    const preserveColorToggle = document.getElementById('preserveColorToggle');
+    const autoFixToggle = document.getElementById('autoFixToggle');
+    const actionItemsToggle = document.getElementById('actionItemsToggle');
+    const customPromptInput = document.getElementById('customPromptInput');
+
+    const errorBanner = document.getElementById('errorBanner');
+    const errorBannerText = document.getElementById('errorBannerText');
+
+    const tabSplit = document.getElementById('tabSplit');
+    const tabPreview = document.getElementById('tabPreview');
+    const tabRaw = document.getElementById('tabRaw');
+    const rawPane = document.getElementById('rawPane');
+    const previewPane = document.getElementById('previewPane');
+    const workspaceContainer = document.getElementById('workspaceContainer');
+
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'default' });
+    }
+
+    // --- PWA Service Worker Registration, Install Prompt & Share Target ---
+    let deferredInstallPrompt = null;
+    const installAppBtn = document.getElementById('installAppBtn');
+
+    if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      installAppBtn.classList.remove('hidden');
+    });
+
+    installAppBtn.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installAppBtn.classList.add('hidden');
+        showToast('J-Eye installed on your device!');
+      }
+      deferredInstallPrompt = null;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installAppBtn.classList.add('hidden');
+      deferredInstallPrompt = null;
+    });
+
+    // Check if an image was shared directly into J-Eye via Android/Chrome Web Share Target
+    (async function handleIncomingSharedImage() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('shared') === '1' && 'caches' in window) {
+        try {
+          const cache = await caches.open('jeye-share-target');
+          const res = await cache.match('/shared-image');
+          if (res) {
+            const blob = await res.blob();
+            await cache.delete('/shared-image');
+            const file = new File([blob], 'shared-image.png', { type: blob.type || 'image/png' });
+            processImageFile(file);
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (e) {}
+      }
+    })();
+
+    // --- Toast & Error Helpers ---
+    let toastTimeout;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastIcon.textContent = type === 'error' ? '⚠️' : type === 'info' ? 'ℹ️' : '✅';
+      toastMessage.textContent = message;
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    function showError(message) {
+      errorBannerText.textContent = message;
+      errorBanner.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorBanner.classList.add('hidden');
+    }
+
+    document.getElementById('closeErrorBanner').addEventListener('click', hideError);
+
+    // --- Theme Management ---
+    const themeToggle = document.getElementById('themeToggle');
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
+
+    function applyTheme(isDark) {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      }
+    }
+
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('jeye_theme');
+    applyTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
+
+    themeToggle.addEventListener('click', () => {
+      const isDark = !document.documentElement.classList.contains('dark');
+      applyTheme(isDark);
+      localStorage.setItem('jeye_theme', isDark ? 'dark' : 'light');
+    });
+
+    // --- Image Upload, Normalization & Preview ---
+    function setActiveImage(dataUrl, base64, mimeType, fileName, dimensionsText) {
+      state.imageBase64 = base64;
+      state.imageMimeType = mimeType;
+      state.imageName = fileName.replace(/\.[^/.]+$/, '') || 'document';
+
+      imagePreview.src = dataUrl;
+      imageMeta.textContent = `${fileName} (${dimensionsText})`;
+      uploadPrompt.classList.add('hidden');
+      imagePreviewWrapper.classList.remove('hidden');
+      clearImageBtn.classList.remove('hidden');
+      convertBtn.disabled = false;
+      hideError();
+    }
+
+    function processImageFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('Please select a valid image file.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_DIM = 2048;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const outMime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+          const normalizedDataUrl = canvas.toDataURL(outMime, 0.9);
+          const base64Data = normalizedDataUrl.split(',')[1];
+
+          setActiveImage(
+            normalizedDataUrl,
+            base64Data,
+            outMime,
+            file.name || 'pasted-image.png',
+            `${width}×${height}px`
+          );
+          showToast('Image ready! Click Convert Image.');
+        };
+        img.onerror = () => {
+          showToast('Could not read that image format.', 'error');
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+      state.imageBase64 = null;
+      state.imageMimeType = null;
+      fileInput.value = '';
+      imagePreview.src = '';
+      uploadPrompt.classList.remove('hidden');
+      imagePreviewWrapper.classList.add('hidden');
+      clearImageBtn.classList.add('hidden');
+      convertBtn.disabled = true;
+      hideError();
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processImageFile(e.target.files[0]);
+      }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-indigo-500', 'bg-indigo-50/40', 'dark:bg-indigo-950/30');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/40', 'dark:bg-indigo-950/30');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/40', 'dark:bg-indigo-950/30');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processImageFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          if (blob) processImageFile(blob);
+          break;
+        }
+      }
+    });
+
+    clearImageBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearImage();
+    });
+
+    // --- Built-in Sample Image Generators ---
+    function loadSampleImage(type) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 900;
+      canvas.height = 560;
+      const ctx = canvas.getContext('2d');
+
+      if (type === 'notes') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 34px Inter, sans-serif';
+        ctx.fillText('Project Launch Overview', 60, 85);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '20px Inter, sans-serif';
+        ctx.fillText('Our Q4 product release focuses on speed, offline reliability,', 60, 140);
+        ctx.fillText('and effortless cross-device note synchronization.', 60, 172);
+
+        ctx.fillStyle = '#4f46e5';
+        ctx.font = 'bold 26px Inter, sans-serif';
+        ctx.fillText('Key Milestones', 60, 245);
+
+        ctx.fillStyle = '#334155';
+        ctx.font = '20px Inter, sans-serif';
+        ctx.fillText('• Complete beta user testing by November 25', 75, 295);
+        ctx.fillText('• Publish updated documentation and onboarding guide', 75, 335);
+        ctx.fillText('• Roll out mobile layout improvements to all users', 75, 375);
+
+        ctx.fillStyle = '#059669';
+        ctx.font = 'bold 26px Inter, sans-serif';
+        ctx.fillText('Next Steps', 60, 445);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '20px Inter, sans-serif';
+        ctx.fillText('Review final QA metrics during Friday morning sync.', 60, 490);
+      } else if (type === 'table') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 32px Inter, sans-serif';
+        ctx.fillText('Invoice #INV-2026-084', 60, 80);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '18px Inter, sans-serif';
+        ctx.fillText('Date: Nov 20, 2026   |   Client: Acme Cloud Studio', 60, 118);
+
+        ctx.fillStyle = '#e0e7ff';
+        ctx.fillRect(60, 160, 780, 48);
+        ctx.fillStyle = '#1e1b4b';
+        ctx.font = 'bold 19px Inter, sans-serif';
+        ctx.fillText('Item Description', 80, 191);
+        ctx.fillText('Qty', 480, 191);
+        ctx.fillText('Unit Price', 580, 191);
+        ctx.fillText('Total', 730, 191);
+
+        const rows = [
+          ['UI/UX Design System', '1', '$1,200.00', '$1,200.00'],
+          ['Frontend Web App Build', '2', '$950.00', '$1,900.00'],
+          ['Cloud Hosting Setup', '1', '$300.00', '$300.00']
+        ];
+
+        rows.forEach((row, idx) => {
+          const y = 248 + idx * 54;
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.beginPath();
+          ctx.moveTo(60, y + 16);
+          ctx.lineTo(840, y + 16);
+          ctx.stroke();
+
+          ctx.fillStyle = '#334155';
+          ctx.font = '19px Inter, sans-serif';
+          ctx.fillText(row[0], 80, y);
+          ctx.fillText(row[1], 485, y);
+          ctx.fillText(row[2], 580, y);
+          ctx.fillText(row[3], 730, y);
+        });
+
+        ctx.fillStyle = '#dc2626';
+        ctx.font = 'bold 22px Inter, sans-serif';
+        ctx.fillText('Grand Total: $3,400.00', 580, 465);
+      } else if (type === 'code') {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 20px JetBrains Mono, monospace';
+        ctx.fillText('# fetch_notes.py', 50, 65);
+
+        const lines = [
+          'import requests',
+          '',
+          'def get_user_notes(api_url: str, token: str) -> list:',
+          '    headers = {"Authorization": f"Bearer {token}"}',
+          '    response = requests.get(api_url, headers=headers, timeout=10)',
+          '    response.raise_for_status()',
+          '    return response.json().get("items", [])',
+          '',
+          'if __name__ == "__main__":',
+          '    notes = get_user_notes("https://api.example.com/notes", "xyz123")',
+          '    print(f"Loaded {len(notes)} notes successfully.")'
+        ];
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '18px JetBrains Mono, monospace';
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, 50, 120 + idx * 36);
+        });
+      }
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64 = dataUrl.split(',')[1];
+      setActiveImage(dataUrl, base64, 'image/png', `sample-${type}.png`, '900×560px');
+      showToast(`Loaded ${type} sample! Click Convert Image.`);
+    }
+
+    document.querySelectorAll('.sample-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        loadSampleImage(btn.dataset.sample);
+      });
+    });
+
+    // --- Format Mode Selection ---
+    document.querySelectorAll('.mode-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach((b) => {
+          b.classList.remove('active', 'border-indigo-600', 'bg-indigo-50/70', 'dark:bg-indigo-950/40', 'dark:border-indigo-500');
+          b.classList.add('border-slate-200', 'dark:border-slate-800');
+        });
+        btn.classList.add('active', 'border-indigo-600', 'bg-indigo-50/70', 'dark:bg-indigo-950/40', 'dark:border-indigo-500');
+        btn.classList.remove('border-slate-200', 'dark:border-slate-800');
+        state.mode = btn.dataset.mode;
+      });
+    });
+
+    // --- Prompt Construction & Vision API Call ---
+    function buildSystemPrompt() {
+      const modeInstructions = {
+        normal: `Extract all text from the image into clean, well-structured Markdown using standard hierarchical headings (#, ##, ###) and normal paragraphs. Use clear bullet points only if lists exist in the image. Keep it clean and universal so it pastes neatly into any note-taking app.`,
+        standard: `Extract all text from the image into clean GitHub Flavored Markdown. Use clear hierarchical headings (#, ##, ###), well-spaced paragraphs, and properly aligned Markdown tables for any tabular data.`,
+        obsidian: `Extract all text from the image formatted for Obsidian PKM. Start with a concise YAML frontmatter block (--- with title, date, and tags), followed by clean headings (#, ##), paragraphs, and [[Wiki-Links]] for key concepts or entities.`,
+        notion: `Extract all text from the image formatted for Notion. Do NOT include YAML frontmatter. Use clean headings (#, ##, ###), concise paragraphs, callout blockquotes (> 💡 ...) for key takeaways, and Markdown tables for structured data.`,
+        code: `Extract all code or terminal output from the image accurately. Wrap code in fenced code blocks with the detected language tag (e.g., \`\`\`python). Fix any broken indentation or OCR character confusion.`,
+        mermaid: `Extract diagrams, flowcharts, or mathematical formulas from the image. Convert flowcharts into valid \`\`\`mermaid\`\`\` diagram blocks and mathematical equations into LaTeX ($...$ or $$...$$), accompanied by brief explanatory headings.`
+      };
+
+      let prompt = `You are J-Eye, an expert document OCR and Markdown structuring engine.
+${modeInstructions[state.mode] || modeInstructions.normal}
+Rules:
+- Output ONLY the extracted Markdown content. Do NOT wrap the entire response in \`\`\`markdown fences and do NOT add conversational filler.`;
+
+      if (preserveColorToggle && preserveColorToggle.checked) {
+        prompt += `\n- Preserve the exact text colors seen in the image! Whenever a heading, phrase, or paragraph has a distinct non-black/non-default font color in the image, wrap that text in an inline HTML span with its exact hex color, like <span style="color:#dc2626">Red Heading</span> or <span style="color:#2563eb">Blue text</span>. Keep standard black/dark-gray body text plain without a span.`;
+      }
+      if (autoFixToggle.checked) {
+        prompt += `\n- Automatically fix broken mid-sentence line wraps and obvious OCR spelling mistakes while preserving original meaning.`;
+      }
+      if (actionItemsToggle.checked) {
+        prompt += `\n- At the bottom, add a "## Summary & Action Items" section with a concise 2-bullet TL;DR and a "- [ ]" task checklist.`;
+      }
+      if (customPromptInput.value.trim()) {
+        prompt += `\n- Additional user instruction: ${customPromptInput.value.trim()}`;
+      }
+      return prompt;
+    }
+
+    async function fetchWithRetry(url, options, retries = 3) {
+      let delay = 1000;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const response = await fetch(url, options);
+        if (response.ok) return response;
+        if ((response.status === 429 || response.status >= 500) && attempt < retries) {
+          await new Promise((res) => setTimeout(res, delay));
+          delay *= 2;
+          continue;
+        }
+        return response;
+      }
+    }
+
+    async function convertImageToMarkdown() {
+      if (!state.imageBase64) {
+        showToast('Please upload or choose an image first.', 'error');
+        return;
+      }
+
+      hideError();
+      convertBtn.disabled = true;
+      convertIcon.classList.add('hidden');
+      loadingSpinner.classList.remove('hidden');
+      convertBtnText.textContent = 'Converting...';
+
+      try {
+        const provider = localStorage.getItem('jeye_ai_provider') || 'gemini';
+        const customKey = (localStorage.getItem('jeye_custom_api_key') || '').trim();
+        const customModel = (localStorage.getItem('jeye_custom_model') || '').trim();
+        const customEndpoint = (localStorage.getItem('jeye_custom_endpoint') || '').trim();
+        const systemPrompt = buildSystemPrompt();
+        const userText = 'Convert this image into clean, structured text with headings according to the system instructions.';
+        const mimeType = state.imageMimeType || 'image/png';
+        const dataUrl = `data:${mimeType};base64,${state.imageBase64}`;
+
+        let outputText = '';
+
+        if (provider === 'openai' || provider === 'openrouter' || provider === 'custom') {
+          if (!customKey && provider !== 'custom') {
+            throw new Error(`Please enter your ${provider.toUpperCase()} API key in AI / API Key settings.`);
+          }
+
+          const endpoint =
+            provider === 'openai'
+              ? 'https://api.openai.com/v1/chat/completions'
+              : provider === 'openrouter'
+              ? 'https://openrouter.ai/api/v1/chat/completions'
+              : customEndpoint || 'http://localhost:11434/v1/chat/completions';
+
+          const model =
+            customModel ||
+            (provider === 'openai'
+              ? 'gpt-4o-mini'
+              : provider === 'openrouter'
+              ? 'google/gemini-2.0-flash-001'
+              : 'llava');
+
+          const headers = { 'Content-Type': 'application/json' };
+          if (customKey) headers['Authorization'] = `Bearer ${customKey}`;
+          if (provider === 'openrouter') {
+            headers['HTTP-Referer'] = window.location.origin;
+            headers['X-Title'] = 'J-Eye';
+          }
+
+          const response = await fetchWithRetry(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                {
+                  role: 'user',
+                  content: [
+                    { type: 'text', text: userText },
+                    { type: 'image_url', image_url: { url: dataUrl } }
+                  ]
+                }
+              ],
+              max_tokens: 4096
+            })
+          });
+
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result?.error?.message || `API Error (${response.status})`);
+          }
+          outputText = (result?.choices?.[0]?.message?.content || '').trim();
+        } else if (provider === 'anthropic') {
+          if (!customKey) {
+            throw new Error('Please enter your Anthropic API key in AI / API Key settings.');
+          }
+          const model = customModel || 'claude-3-5-sonnet-latest';
+          const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': customKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: 4096,
+              system: systemPrompt,
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    {
+                      type: 'image',
+                      source: {
+                        type: 'base64',
+                        media_type: mimeType,
+                        data: state.imageBase64
+                      }
+                    },
+                    { type: 'text', text: userText }
+                  ]
+                }
+              ]
+            })
+          });
+
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result?.error?.message || `Anthropic Error (${response.status})`);
+          }
+          outputText = (result?.content || [])
+            .filter((b) => b.type === 'text')
+            .map((b) => b.text)
+            .join('\n')
+            .trim();
+        } else {
+          // Default: Google Gemini
+          const apiKey = customKey;
+          const model = customModel || 'gemini-3-flash-preview';
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+
+          const payload = {
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: userText },
+                  {
+                    inlineData: {
+                      mimeType,
+                      data: state.imageBase64
+                    }
+                  }
+                ]
+              }
+            ],
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            }
+          };
+
+          const response = await fetchWithRetry(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            const errMsg = result?.error?.message || `API Error (${response.status})`;
+            throw new Error(errMsg);
+          }
+
+          const parts = result?.candidates?.[0]?.content?.parts || [];
+          outputText = parts
+            .filter((p) => p.text && !p.thought)
+            .map((p) => p.text)
+            .join('\n')
+            .trim();
+        }
+
+        if (!outputText) {
+          throw new Error('No text could be extracted from this image. Please try a clearer image.');
+        }
+
+        const cleanedMarkdown = outputText
+          .replace(/^```(?:markdown|md)?\n/i, '')
+          .replace(/\n```$/, '')
+          .trim();
+
+        markdownEditor.value = cleanedMarkdown;
+        updateLivePreview();
+        saveToHistory(state.imageName, state.mode, cleanedMarkdown);
+        showToast('Converted successfully!');
+
+        if (window.innerWidth < 768) {
+          setViewMode('preview', false);
+        }
+      } catch (err) {
+        const msg = err.message || '';
+        const isAuthOrPermissionError =
+          msg.toLowerCase().includes('permission') ||
+          msg.toLowerCase().includes('api key') ||
+          msg.toLowerCase().includes('unregistered') ||
+          msg.toLowerCase().includes('forbidden') ||
+          msg.includes('403') ||
+          msg.includes('400') ||
+          !navigator.onLine;
+
+        if (isAuthOrPermissionError && typeof Tesseract !== 'undefined') {
+          try {
+            convertBtnText.textContent = 'Running Offline OCR...';
+            showToast('Using built-in Offline Structure Engine...', 'info');
+
+            const dataUrl = `data:${state.imageMimeType || 'image/png'};base64,${state.imageBase64}`;
+            const ocrRes = await Tesseract.recognize(dataUrl, 'eng');
+            let structured = await formatOfflineOcrWithTables(ocrRes.data, state.mode, dataUrl, preserveColorToggle?.checked);
+
+            if (!structured) {
+              throw new Error('Offline OCR could not detect readable text in this image.');
+            }
+
+            if (actionItemsToggle.checked) {
+              structured += `\n\n## Summary & Action Items\n- [ ] Review extracted headings, links, and tables\n- [ ] Verify key numbers and notes`;
+            }
+
+            markdownEditor.value = structured;
+            updateLivePreview();
+            saveToHistory(state.imageName, `${state.mode} (offline)`, structured);
+            showToast('Converted with Offline Structure Engine!');
+
+            if (window.innerWidth < 768) {
+              setViewMode('preview', false);
+            }
+          } catch (ocrErr) {
+            showError('Offline OCR failed: ' + (ocrErr.message || 'Could not extract text.'));
+            showToast('Conversion failed.', 'error');
+          }
+        } else {
+          showError(msg || 'Conversion failed. Please try again.');
+          showToast('Conversion failed.', 'error');
+        }
+      } finally {
+        convertBtn.disabled = false;
+        convertIcon.classList.remove('hidden');
+        loadingSpinner.classList.add('hidden');
+        convertBtnText.textContent = 'Convert Image';
+      }
+    }
+
+    convertBtn.addEventListener('click', convertImageToMarkdown);
+
+    // --- Offline Spatial Table, Heading, List, Link & Exact Color Engine ---
+    async function extractImageColorSampler(dataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          ctx.drawImage(img, 0, 0);
+
+          const rgbToHex = (r, g, b) =>
+            '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+
+          const corners = [
+            ctx.getImageData(2, 2, 1, 1).data,
+            ctx.getImageData(Math.max(0, img.width - 3), 2, 1, 1).data,
+            ctx.getImageData(2, Math.max(0, img.height - 3), 1, 1).data,
+            ctx.getImageData(Math.max(0, img.width - 3), Math.max(0, img.height - 3), 1, 1).data
+          ];
+          const bgR = corners.reduce((s, c) => s + c[0], 0) / 4;
+          const bgG = corners.reduce((s, c) => s + c[1], 0) / 4;
+          const bgB = corners.reduce((s, c) => s + c[2], 0) / 4;
+
+          resolve((bbox) => {
+            if (!bbox) return null;
+            const x0 = Math.max(0, Math.floor(bbox.x0));
+            const y0 = Math.max(0, Math.floor(bbox.y0));
+            const w = Math.min(img.width - x0, Math.max(1, Math.ceil(bbox.x1 - bbox.x0)));
+            const h = Math.min(img.height - y0, Math.max(1, Math.ceil(bbox.y1 - bbox.y0)));
+            const data = ctx.getImageData(x0, y0, w, h).data;
+
+            const candidates = [];
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+              if (a < 128) continue;
+              const distFromBg = Math.hypot(r - bgR, g - bgG, b - bgB);
+              if (distFromBg > 55) {
+                candidates.push({ r, g, b, distFromBg });
+              }
+            }
+            if (!candidates.length) return null;
+            candidates.sort((a, b) => b.distFromBg - a.distFromBg);
+            const topSlice = candidates.slice(0, Math.max(1, Math.ceil(candidates.length * 0.35)));
+            const avgR = topSlice.reduce((s, p) => s + p.r, 0) / topSlice.length;
+            const avgG = topSlice.reduce((s, p) => s + p.g, 0) / topSlice.length;
+            const avgB = topSlice.reduce((s, p) => s + p.b, 0) / topSlice.length;
+
+            const maxC = Math.max(avgR, avgG, avgB);
+            const minC = Math.min(avgR, avgG, avgB);
+            const saturation = maxC - minC;
+            if (saturation < 22 && maxC < 75) return null;
+            return rgbToHex(avgR, avgG, avgB);
+          });
+        };
+        img.onerror = () => resolve(() => null);
+        img.src = dataUrl;
+      });
+    }
+
+    async function formatOfflineOcrWithTables(ocrData, mode, dataUrl = null, preserveColors = false) {
+      if (!ocrData) return '';
+      const sampleColor = preserveColors && dataUrl ? await extractImageColorSampler(dataUrl) : () => null;
+
+      const wrapWithColor = (text, hex) => {
+        if (!hex || !preserveColors) return text;
+        return `<span style="color:${hex}">${text}</span>`;
+      };
+
+      const autoLinkify = (text) => {
+        return text
+          .replace(/(^|\s)(https?:\/\/[^\s)]+)/g, '$1[$2]($2)')
+          .replace(/(^|\s)(www\.[^\s)]+)/g, '$1[$2](https://$2)')
+          .replace(/\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g, '[$1](mailto:$1)');
+      };
+
+      const words = (ocrData.words || []).filter((w) => w.text && w.text.trim() && w.bbox);
+      if (!words.length) {
+        const fallbackLines = (ocrData.text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+        if (!fallbackLines.length) return '';
+        return `# ${fallbackLines[0]}\n\n${fallbackLines.slice(1).map(autoLinkify).join('\n\n')}`.trim();
+      }
+
+      const sortedWords = [...words].sort((a, b) => a.bbox.y0 - b.bbox.y0 || a.bbox.x0 - b.bbox.x0);
+      const rows = [];
+
+      sortedWords.forEach((w) => {
+        const midY = (w.bbox.y0 + w.bbox.y1) / 2;
+        const height = Math.max(10, w.bbox.y1 - w.bbox.y0);
+        let matchedRow = rows.find((r) => Math.abs(r.midY - midY) <= Math.max(r.avgHeight, height) * 0.55);
+        if (!matchedRow) {
+          matchedRow = { midY, avgHeight: height, words: [] };
+          rows.push(matchedRow);
+        }
+        matchedRow.words.push(w);
+        matchedRow.midY = matchedRow.words.reduce((acc, item) => acc + (item.bbox.y0 + item.bbox.y1) / 2, 0) / matchedRow.words.length;
+        matchedRow.avgHeight = matchedRow.words.reduce((acc, item) => acc + (item.bbox.y1 - item.bbox.y0), 0) / matchedRow.words.length;
+      });
+
+      const heights = rows.map((r) => r.avgHeight).sort((a, b) => a - b);
+      const medianHeight = heights[Math.floor(heights.length / 2)] || 16;
+
+      const structuredRows = rows
+        .sort((a, b) => a.midY - b.midY)
+        .map((row) => {
+          row.words.sort((a, b) => a.bbox.x0 - b.bbox.x0);
+          const cells = [];
+          let currentCell = [row.words[0].text.trim()];
+          let cellBbox = { ...row.words[0].bbox };
+          let prevX1 = row.words[0].bbox.x1;
+
+          for (let i = 1; i < row.words.length; i++) {
+            const w = row.words[i];
+            const charWidth = Math.max(6, (w.bbox.x1 - w.bbox.x0) / Math.max(1, w.text.trim().length));
+            const gap = w.bbox.x0 - prevX1;
+            if (gap > charWidth * 2.3) {
+              cells.push({ text: currentCell.join(' '), color: sampleColor(cellBbox) });
+              currentCell = [w.text.trim()];
+              cellBbox = { ...w.bbox };
+            } else {
+              currentCell.push(w.text.trim());
+              cellBbox.x0 = Math.min(cellBbox.x0, w.bbox.x0);
+              cellBbox.y0 = Math.min(cellBbox.y0, w.bbox.y0);
+              cellBbox.x1 = Math.max(cellBbox.x1, w.bbox.x1);
+              cellBbox.y1 = Math.max(cellBbox.y1, w.bbox.y1);
+            }
+            prevX1 = w.bbox.x1;
+          }
+          cells.push({ text: currentCell.join(' '), color: sampleColor(cellBbox) });
+          return { cells, height: row.avgHeight };
+        });
+
+      const outputBlocks = [];
+      let i = 0;
+      let hasMainHeading = false;
+
+      while (i < structuredRows.length) {
+        const row = structuredRows[i];
+        const isMultiCol = row.cells.length >= 2;
+
+        if (isMultiCol && i + 1 < structuredRows.length && structuredRows[i + 1].cells.length >= 2) {
+          const tableRows = [];
+          let maxCols = 0;
+          while (i < structuredRows.length && structuredRows[i].cells.length >= 2) {
+            maxCols = Math.max(maxCols, structuredRows[i].cells.length);
+            tableRows.push(structuredRows[i].cells);
+            i++;
+          }
+
+          const normalized = tableRows.map((r) => {
+            const padded = [...r];
+            while (padded.length < maxCols) padded.push({ text: '', color: null });
+            return padded.map((c) => wrapWithColor(autoLinkify(c.text.replace(/\|/g, '\\|')), c.color));
+          });
+
+          const header = `| ${normalized[0].join(' | ')} |`;
+          const divider = `| ${Array(maxCols).fill('---').join(' | ')} |`;
+          const body = normalized.slice(1).map((r) => `| ${r.join(' | ')} |`).join('\n');
+          outputBlocks.push(`${header}\n${divider}${body ? '\n' + body : ''}`);
+          continue;
+        }
+
+        const rawLine = row.cells.map((c) => c.text).join('  ').trim();
+        const rowColor = row.cells.find((c) => c.color)?.color || null;
+        if (!rawLine) {
+          i++;
+          continue;
+        }
+
+        const isLargeFont = row.height >= medianHeight * 1.28;
+        const isMediumFont = row.height >= medianHeight * 1.12;
+        const isBullet = /^[•●▪◦\-*]\s+/.test(rawLine);
+        const isCheckbox = /^(\[\s?\]|☐|□|\[x\]|☑|✓)\s*/i.test(rawLine);
+        const isNumbered = /^\d+[.)]\s+/.test(rawLine);
+
+        if (!hasMainHeading && (isLargeFont || (i === 0 && rawLine.length < 70))) {
+          outputBlocks.push(`# ${wrapWithColor(rawLine, rowColor)}`);
+          hasMainHeading = true;
+        } else if (
+          !isBullet &&
+          !isCheckbox &&
+          !isNumbered &&
+          (isLargeFont || isMediumFont || (rawLine.length < 52 && !rawLine.endsWith('.') && !rawLine.includes('://')))
+        ) {
+          outputBlocks.push(`## ${wrapWithColor(rawLine, rowColor)}`);
+        } else if (isCheckbox) {
+          const checked = /^(\[x\]|☑|✓)/i.test(rawLine);
+          const itemText = rawLine.replace(/^(\[\s?\]|☐|□|\[x\]|☑|✓)\s*/i, '');
+          outputBlocks.push(`${checked ? '- [x]' : '- [ ]'} ${wrapWithColor(autoLinkify(itemText), rowColor)}`);
+        } else if (isBullet) {
+          const itemText = rawLine.replace(/^[•●▪◦\-*]\s+/, '');
+          outputBlocks.push(`- ${wrapWithColor(autoLinkify(itemText), rowColor)}`);
+        } else if (isNumbered) {
+          outputBlocks.push(wrapWithColor(autoLinkify(rawLine), rowColor));
+        } else {
+          outputBlocks.push(wrapWithColor(autoLinkify(rawLine), rowColor));
+        }
+        i++;
+      }
+
+      let result = outputBlocks.join('\n\n').replace(/\n\n(- |\d+[.)] )/g, '\n$1').trim();
+
+      if (mode === 'obsidian') {
+        const title = (structuredRows[0]?.cells.map((c) => c.text).join(' ') || state.imageName || 'Captured Note').replace(/"/g, '');
+        result = result.replace(/(^|\s)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)(?=\s|[.,!?]|$)/g, '$1[[$2]]');
+        result = `---\ntitle: "${title}"\ndate: ${new Date().toISOString().slice(0, 10)}\ntags: [j-eye, note]\n---\n\n${result}`;
+      } else if (mode === 'notion') {
+        result = result.replace(/^# (.*)$/m, '# $1\n\n> 💡 Captured with J-Eye');
+      }
+
+      return result;
+    }
+
+    // --- Live Markdown Preview & Word Counter ---
+    function updateLivePreview() {
+      const raw = markdownEditor.value;
+      const chars = raw.length;
+      const words = raw.trim() ? raw.trim().split(/\s+/).length : 0;
+      wordCount.textContent = `${words} words · ${chars} chars`;
+
+      if (!raw.trim()) {
+        markdownPreview.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 dark:text-slate-500 py-12">
+            <p class="text-xs">Upload an image and click <strong>Convert Image</strong> to see your formatted text with headings here.</p>
+          </div>`;
+        return;
+      }
+
+      const previewSource = raw.replace(/^---\n[\s\S]*?\n---\n?/, '');
+
+      if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        const html = marked.parse(previewSource, { breaks: true, gfm: true });
+        markdownPreview.innerHTML = DOMPurify.sanitize(html, {
+          ADD_ATTR: ['style']
+        });
+
+        if (typeof hljs !== 'undefined') {
+          markdownPreview.querySelectorAll('pre code').forEach((block) => {
+            if (!block.classList.contains('language-mermaid')) {
+              hljs.highlightElement(block);
+            }
+          });
+        }
+
+        if (typeof renderMathInElement !== 'undefined') {
+          try {
+            renderMathInElement(markdownPreview, {
+              delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false }
+              ],
+              throwOnError: false
+            });
+          } catch (e) {}
+        }
+
+        if (typeof mermaid !== 'undefined') {
+          const mermaidBlocks = markdownPreview.querySelectorAll('code.language-mermaid');
+          mermaidBlocks.forEach((block) => {
+            const pre = block.parentElement;
+            const div = document.createElement('div');
+            div.className = 'mermaid my-3';
+            div.textContent = block.textContent;
+            pre.replaceWith(div);
+          });
+          if (mermaidBlocks.length > 0) {
+            try {
+              mermaid.run({ nodes: markdownPreview.querySelectorAll('.mermaid') });
+            } catch (e) {}
+          }
+        }
+      } else {
+        markdownPreview.textContent = previewSource;
+      }
+    }
+
+    markdownEditor.addEventListener('input', updateLivePreview);
+
+    // --- Responsive Mobile & Desktop View Mode Switcher ---
+    function setViewMode(mode, isUserAction = false) {
+      state.viewMode = mode;
+      if (isUserAction) state.userOverrodeView = true;
+
+      [tabSplit, tabPreview, tabRaw].forEach((tab) => {
+        tab.classList.remove('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+        tab.classList.add('text-slate-600', 'dark:text-slate-300');
+      });
+
+      if (mode === 'split') {
+        tabSplit.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+        tabSplit.classList.remove('text-slate-600', 'dark:text-slate-300');
+        rawPane.classList.remove('hidden');
+        previewPane.classList.remove('hidden');
+        workspaceContainer.classList.add('md:grid-cols-2');
+      } else if (mode === 'raw') {
+        tabRaw.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+        tabRaw.classList.remove('text-slate-600', 'dark:text-slate-300');
+        rawPane.classList.remove('hidden');
+        previewPane.classList.add('hidden');
+        workspaceContainer.classList.remove('md:grid-cols-2');
+      } else {
+        tabPreview.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+        tabPreview.classList.remove('text-slate-600', 'dark:text-slate-300');
+        rawPane.classList.add('hidden');
+        previewPane.classList.remove('hidden');
+        workspaceContainer.classList.remove('md:grid-cols-2');
+      }
+    }
+
+    tabSplit.addEventListener('click', () => setViewMode('split', true));
+    tabRaw.addEventListener('click', () => setViewMode('raw', true));
+    tabPreview.addEventListener('click', () => setViewMode('preview', true));
+
+    function handleResponsiveLayout() {
+      const isDesktop = window.innerWidth >= 768;
+      if (isDesktop) {
+        if (!state.userOverrodeView || state.viewMode !== 'split') {
+          setViewMode('split', false);
+        }
+      } else {
+        if (state.viewMode === 'split') {
+          setViewMode('preview', false);
+        }
+      }
+    }
+
+    handleResponsiveLayout();
+    window.addEventListener('resize', handleResponsiveLayout);
+
+    // --- Clipboard Helper ---
+    function copyToClipboardWithRichHtml(plainText, htmlText = null) {
+      const handleCopyEvent = (e) => {
+        if (e.clipboardData) {
+          e.preventDefault();
+          e.clipboardData.setData('text/plain', plainText);
+          if (htmlText) {
+            e.clipboardData.setData('text/html', htmlText);
+          }
+        }
+      };
+
+      document.addEventListener('copy', handleCopyEvent);
+      const tempTextarea = document.createElement('textarea');
+      tempTextarea.value = plainText;
+      tempTextarea.style.position = 'fixed';
+      tempTextarea.style.left = '-9999px';
+      document.body.appendChild(tempTextarea);
+      tempTextarea.select();
+
+      let success = false;
+      try {
+        success = document.execCommand('copy');
+      } catch (err) {
+        success = false;
+      } finally {
+        document.body.removeChild(tempTextarea);
+        document.removeEventListener('copy', handleCopyEvent);
+      }
+      return success;
+    }
+
+    function convertMarkdownToCleanText(md) {
+      let clean = md.replace(/^---\n[\s\S]*?\n---\n?/, '');
+      clean = clean
+        .replace(/<span[^>]*>([\s\S]*?)<\/span>/gi, '$1')
+        .replace(/^#{1,6}\s+(.*)$/gm, (_, title) => `\n${title.trim()}`)
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/\[\[([^\]]+)\]\]/g, '$1')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/^\s*[-*+]\s+\[ \]\s+/gm, '☐ ')
+        .replace(/^\s*[-*+]\s+\[x\]\s+/gim, '☑ ')
+        .replace(/^\s*[-*+]\s+/gm, '• ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      return clean;
+    }
+
+    function convertMarkdownToRichHtml(md) {
+      const bodyWithoutFrontmatter = md.replace(/^---\n[\s\S]*?\n---\n?/, '').trim();
+      if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        const parsed = marked.parse(bodyWithoutFrontmatter, { breaks: true, gfm: true });
+        return DOMPurify.sanitize(parsed, { ADD_ATTR: ['style'] });
+      }
+      return null;
+    }
+
+    document.getElementById('copyTextBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) {
+        showToast('Nothing to copy yet!', 'error');
+        return;
+      }
+      const cleanText = convertMarkdownToCleanText(content);
+      const richHtml = convertMarkdownToRichHtml(content);
+      if (copyToClipboardWithRichHtml(cleanText, richHtml)) {
+        showToast('Copied formatted text for OneNote, Keep & Docs!');
+      } else {
+        showToast('Unable to copy text.', 'error');
+      }
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) {
+        showToast('Nothing to copy yet!', 'error');
+        return;
+      }
+      if (copyToClipboardWithRichHtml(content)) {
+        showToast('Markdown copied to clipboard!');
+      } else {
+        showToast('Unable to copy text.', 'error');
+      }
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) {
+        showToast('Convert an image first before downloading.', 'error');
+        return;
+      }
+      const fileName = `${state.imageName || 'jeye-note'}.md`;
+      const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      currentExportFile = new File([blob], fileName, { type: 'text/markdown' });
+      exportModalTitle.textContent = 'Export Markdown (.md)';
+      exportModalDesc.textContent = `Your Markdown file "${fileName}" is ready:`;
+      directDownloadLink.href = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(content);
+      directDownloadLink.download = fileName;
+      directDownloadLink.textContent = `⬇️ Direct Download ${fileName}`;
+      exportModal.classList.remove('hidden');
+    });
+
+    // --- Export Modal Controls, Docs (.doc) & Vector PDF (.pdf) ---
+    const exportModal = document.getElementById('exportModal');
+    const exportModalTitle = document.getElementById('exportModalTitle');
+    const exportModalDesc = document.getElementById('exportModalDesc');
+    const directDownloadLink = document.getElementById('directDownloadLink');
+    let currentExportFile = null;
+
+    function closeExportDialog() {
+      exportModal.classList.add('hidden');
+    }
+
+    document.getElementById('closeExportModal').addEventListener('click', closeExportDialog);
+    document.getElementById('closeExportModalBottom').addEventListener('click', closeExportDialog);
+    exportModal.addEventListener('click', (e) => {
+      if (e.target === exportModal) closeExportDialog();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !exportModal.classList.contains('hidden')) {
+        closeExportDialog();
+      }
+    });
+
+    document.getElementById('nativeShareFileBtn').addEventListener('click', async () => {
+      const content = markdownEditor.value.trim();
+      if (!content) return;
+
+      try {
+        if (currentExportFile && navigator.canShare && navigator.canShare({ files: [currentExportFile] })) {
+          await navigator.share({
+            files: [currentExportFile],
+            title: currentExportFile.name
+          });
+          showToast('Shared successfully!');
+          return;
+        }
+        if (navigator.share) {
+          await navigator.share({
+            title: state.imageName || 'J-Eye Document',
+            text: convertMarkdownToCleanText(content)
+          });
+          showToast('Shared text successfully!');
+          return;
+        }
+        showToast('System share is unavailable in this browser—use Copy Formatted below.', 'info');
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          showToast('Could not open share sheet—use Copy Formatted below.', 'info');
+        }
+      }
+    });
+
+    document.getElementById('copyForDocsBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) return;
+      const cleanText = convertMarkdownToCleanText(content);
+      const richHtml = convertMarkdownToRichHtml(content);
+      if (copyToClipboardWithRichHtml(cleanText, richHtml)) {
+        showToast('Copied formatted document! Paste into Google Docs or Word.');
+        closeExportDialog();
+      } else {
+        showToast('Unable to copy formatted document.', 'error');
+      }
+    });
+
+    document.getElementById('downloadDocsBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) {
+        showToast('Convert an image first before downloading Docs.', 'error');
+        return;
+      }
+
+      const fileName = `${state.imageName || 'jeye-note'}.doc`;
+      const richHtml = convertMarkdownToRichHtml(content) || `<p>${content}</p>`;
+      const wordHtml = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${state.imageName || 'Document'}</title>
+<style>
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #111827; }
+  h1 { font-size: 18pt; font-weight: bold; margin: 12pt 0 6pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; }
+  h2 { font-size: 14pt; font-weight: bold; margin: 10pt 0 4pt; }
+  h3 { font-size: 12pt; font-weight: bold; margin: 8pt 0 4pt; }
+  p { margin: 0 0 8pt; }
+  table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
+  th, td { border: 1pt solid #94a3b8; padding: 5pt 8pt; text-align: left; }
+  th { background-color: #f1f5f9; font-weight: bold; }
+</style>
+</head>
+<body>${richHtml}</body>
+</html>`;
+
+      const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
+      const dataUri = 'data:application/msword;charset=utf-8,' + encodeURIComponent('\ufeff' + wordHtml);
+      currentExportFile = new File([blob], fileName, { type: 'application/msword' });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      exportModalTitle.textContent = 'Export Word / Google Docs (.doc)';
+      exportModalDesc.textContent = `Your document "${fileName}" is ready with headings, paragraphs, and tables:`;
+      directDownloadLink.href = dataUri;
+      directDownloadLink.download = fileName;
+      directDownloadLink.textContent = `⬇️ Direct Download ${fileName}`;
+      exportModal.classList.remove('hidden');
+      showToast('Docs file generated!');
+    });
+
+    document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) {
+        showToast('Convert an image first before downloading PDF.', 'error');
+        return;
+      }
+
+      const jsPDFConstructor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+      if (!jsPDFConstructor) {
+        showToast('PDF library still loading—try again in a moment.', 'error');
+        return;
+      }
+
+      try {
+        const fileName = `${state.imageName || 'jeye-note'}.pdf`;
+        const doc = new jsPDFConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 16;
+        const maxWidth = pageWidth - margin * 2;
+        let cursorY = 20;
+
+        const checkPageBreak = (neededHeight) => {
+          if (cursorY + neededHeight > pageHeight - margin) {
+            doc.addPage();
+            cursorY = 20;
+          }
+        };
+
+        const richHtml = convertMarkdownToRichHtml(content) || `<p>${content}</p>`;
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = richHtml;
+
+        const parseColorToRgb = (el) => {
+          const styledEl = el?.matches?.('[style*="color"]') ? el : el?.querySelector?.('[style*="color"]');
+          const styleStr = styledEl?.getAttribute?.('style') || '';
+          const hexMatch = styleStr.match(/color:\s*#([0-9a-f]{6}|[0-9a-f]{3})/i);
+          if (hexMatch) {
+            let hex = hexMatch[1];
+            if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+            return [
+              parseInt(hex.slice(0, 2), 16),
+              parseInt(hex.slice(2, 4), 16),
+              parseInt(hex.slice(4, 6), 16)
+            ];
+          }
+          const rgbMatch = styleStr.match(/color:\s*rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+          if (rgbMatch) {
+            return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
+          }
+          return [15, 23, 42];
+        };
+
+        const writeWrappedText = (text, fontSize, isBold = false, extraSpaceAfter = 4, indent = 0, rgb = [15, 23, 42]) => {
+          const clean = (text || '').replace(/\s+/g, ' ').trim();
+          if (!clean) return;
+          doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+          doc.setFontSize(fontSize);
+          doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+          const lineHeight = fontSize * 0.45;
+          const lines = doc.splitTextToSize(clean, maxWidth - indent);
+          lines.forEach((line) => {
+            checkPageBreak(lineHeight + 2);
+            doc.text(line, margin + indent, cursorY);
+            cursorY += lineHeight;
+          });
+          cursorY += extraSpaceAfter;
+        };
+
+        Array.from(tempContainer.children).forEach((el) => {
+          const tag = el.tagName.toLowerCase();
+          const elRgb = parseColorToRgb(el);
+          if (tag === 'h1') {
+            cursorY += 2;
+            writeWrappedText(el.textContent, 18, true, 3, 0, elRgb);
+            doc.setDrawColor(203, 213, 225);
+            doc.line(margin, cursorY - 1.5, pageWidth - margin, cursorY - 1.5);
+            cursorY += 3;
+          } else if (tag === 'h2') {
+            cursorY += 2;
+            writeWrappedText(el.textContent, 14, true, 3, 0, elRgb);
+          } else if (tag === 'h3' || tag === 'h4') {
+            cursorY += 1.5;
+            writeWrappedText(el.textContent, 12, true, 2.5, 0, elRgb);
+          } else if (tag === 'p') {
+            writeWrappedText(el.textContent, 11, false, 4, 0, elRgb);
+          } else if (tag === 'ul' || tag === 'ol') {
+            const items = Array.from(el.querySelectorAll('li'));
+            items.forEach((li, index) => {
+              const prefix = tag === 'ol' ? `${index + 1}. ` : '• ';
+              writeWrappedText(prefix + li.textContent, 11, false, 2, 4, parseColorToRgb(li));
+            });
+            cursorY += 2;
+          } else if (tag === 'blockquote') {
+            writeWrappedText('“' + el.textContent.trim() + '”', 10.5, false, 4, 5, elRgb);
+          } else if (tag === 'pre') {
+            const codeLines = (el.textContent || '').split('\n');
+            doc.setFont('courier', 'normal');
+            doc.setFontSize(9.5);
+            doc.setTextColor(15, 23, 42);
+            codeLines.forEach((cLine) => {
+              const wrapped = doc.splitTextToSize(cLine || ' ', maxWidth - 6);
+              wrapped.forEach((wLine) => {
+                checkPageBreak(5);
+                doc.text(wLine, margin + 3, cursorY);
+                cursorY += 4.3;
+              });
+            });
+            cursorY += 3;
+          } else if (tag === 'table') {
+            const buildCellObj = (cell) => ({
+              content: cell.textContent.trim(),
+              styles: { textColor: parseColorToRgb(cell) }
+            });
+            const headRows = Array.from(el.querySelectorAll('thead tr')).map((tr) =>
+              Array.from(tr.querySelectorAll('th, td')).map(buildCellObj)
+            );
+            const bodyRows = Array.from(el.querySelectorAll('tbody tr')).map((tr) =>
+              Array.from(tr.querySelectorAll('td, th')).map(buildCellObj)
+            );
+            if (typeof doc.autoTable === 'function' && (headRows.length || bodyRows.length)) {
+              doc.autoTable({
+                startY: cursorY,
+                head: headRows.length ? headRows : undefined,
+                body: bodyRows,
+                margin: { left: margin, right: margin },
+                styles: { fontSize: 10, cellPadding: 2.5, textColor: [15, 23, 42] },
+                headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' }
+              });
+              cursorY = (doc.lastAutoTable?.finalY || cursorY) + 5;
+            } else {
+              writeWrappedText(el.textContent, 10, false, 4, 0, elRgb);
+            }
+          } else {
+            writeWrappedText(el.textContent, 11, false, 3, 0, elRgb);
+          }
+        });
+
+        const pdfBlob = doc.output('blob');
+        const pdfDataUri = doc.output('datauristring');
+        currentExportFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+        doc.save(fileName);
+
+        exportModalTitle.textContent = 'Export PDF Document (.pdf)';
+        exportModalDesc.textContent = `Your PDF "${fileName}" is ready with all headings, paragraphs, and tables:`;
+        directDownloadLink.href = pdfDataUri;
+        directDownloadLink.download = fileName;
+        directDownloadLink.textContent = `⬇️ Direct Download ${fileName}`;
+        exportModal.classList.remove('hidden');
+        showToast('PDF generated!');
+      } catch (err) {
+        showError('PDF error: ' + (err.message || 'Could not generate PDF.'));
+        showToast('Could not build PDF.', 'error');
+      }
+    });
+
+    document.getElementById('obsidianBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) {
+        showToast('Convert an image first before sending to Obsidian.', 'error');
+        return;
+      }
+      const noteName = encodeURIComponent(state.imageName || 'J-Eye Capture');
+      const noteContent = encodeURIComponent(content);
+      window.location.href = `obsidian://new?name=${noteName}&content=${noteContent}`;
+      showToast('Opening Obsidian...');
+    });
+
+    document.getElementById('notionBtn').addEventListener('click', () => {
+      const content = markdownEditor.value.trim();
+      if (!content) {
+        showToast('Nothing to copy for Notion yet!', 'error');
+        return;
+      }
+      const notionReady = content
+        .replace(/^---\n[\s\S]*?\n---\n?/, '')
+        .replace(/\[\[([^\]]+)\]\]/g, '$1')
+        .trim();
+      if (copyToClipboardWithRichHtml(notionReady)) {
+        showToast('Copied Notion-ready blocks! Paste (Ctrl+V) into Notion.');
+      } else {
+        showToast('Unable to copy text.', 'error');
+      }
+    });
+
+    // --- Multi-Provider AI API Key Modal Logic ---
+    const apiKeyModal = document.getElementById('apiKeyModal');
+    const aiProviderSelect = document.getElementById('aiProviderSelect');
+    const customApiKeyInput = document.getElementById('customApiKeyInput');
+    const customModelInput = document.getElementById('customModelInput');
+    const customEndpointWrapper = document.getElementById('customEndpointWrapper');
+    const customEndpointInput = document.getElementById('customEndpointInput');
+    const providerBadgeLabel = document.getElementById('providerBadgeLabel');
+
+    const providerDefaults = {
+      gemini: { placeholder: 'AIzaSy... (Leave blank for built-in offline OCR)', model: 'gemini-3-flash-preview', label: 'Gemini' },
+      openai: { placeholder: 'sk-proj-...', model: 'gpt-4o-mini', label: 'OpenAI' },
+      anthropic: { placeholder: 'sk-ant-api03-...', model: 'claude-3-5-sonnet-latest', label: 'Claude' },
+      openrouter: { placeholder: 'sk-or-v1-...', model: 'google/gemini-2.0-flash-001', label: 'OpenRouter' },
+      custom: { placeholder: 'Bearer token (optional for local Ollama)', model: 'llava', label: 'Custom AI' }
+    };
+
+    function syncProviderModalFields() {
+      const prov = aiProviderSelect.value || 'gemini';
+      const cfg = providerDefaults[prov] || providerDefaults.gemini;
+      customApiKeyInput.placeholder = cfg.placeholder;
+      customModelInput.placeholder = cfg.model;
+      customEndpointWrapper.classList.toggle('hidden', prov !== 'custom');
+    }
+
+    function updateProviderBadge() {
+      const prov = localStorage.getItem('jeye_ai_provider') || 'gemini';
+      const hasCustom = Boolean(localStorage.getItem('jeye_custom_api_key'));
+      const cfg = providerDefaults[prov] || providerDefaults.gemini;
+      providerBadgeLabel.textContent = hasCustom || prov !== 'gemini' ? `${cfg.label} Key` : 'AI / API Key';
+    }
+
+    aiProviderSelect.addEventListener('change', syncProviderModalFields);
+    updateProviderBadge();
+
+    document.getElementById('apiKeyBtn').addEventListener('click', () => {
+      aiProviderSelect.value = localStorage.getItem('jeye_ai_provider') || 'gemini';
+      customApiKeyInput.value = localStorage.getItem('jeye_custom_api_key') || '';
+      customModelInput.value = localStorage.getItem('jeye_custom_model') || '';
+      customEndpointInput.value = localStorage.getItem('jeye_custom_endpoint') || '';
+      syncProviderModalFields();
+      apiKeyModal.classList.remove('hidden');
+    });
+
+    document.getElementById('closeApiKeyModal').addEventListener('click', () => {
+      apiKeyModal.classList.add('hidden');
+    });
+
+    apiKeyModal.addEventListener('click', (e) => {
+      if (e.target === apiKeyModal) apiKeyModal.classList.add('hidden');
+    });
+
+    document.getElementById('saveApiKeyBtn').addEventListener('click', () => {
+      const prov = aiProviderSelect.value || 'gemini';
+      const keyVal = customApiKeyInput.value.trim();
+      const modelVal = customModelInput.value.trim();
+      const endpointVal = customEndpointInput.value.trim();
+
+      localStorage.setItem('jeye_ai_provider', prov);
+      if (keyVal) localStorage.setItem('jeye_custom_api_key', keyVal);
+      else localStorage.removeItem('jeye_custom_api_key');
+
+      if (modelVal) localStorage.setItem('jeye_custom_model', modelVal);
+      else localStorage.removeItem('jeye_custom_model');
+
+      if (endpointVal && prov === 'custom') localStorage.setItem('jeye_custom_endpoint', endpointVal);
+      else localStorage.removeItem('jeye_custom_endpoint');
+
+      updateProviderBadge();
+      showToast(`Saved ${providerDefaults[prov]?.label || 'AI'} settings!`);
+      apiKeyModal.classList.add('hidden');
+    });
+
+    document.getElementById('clearApiKeyBtn').addEventListener('click', () => {
+      localStorage.removeItem('jeye_ai_provider');
+      localStorage.removeItem('jeye_custom_api_key');
+      localStorage.removeItem('jeye_custom_model');
+      localStorage.removeItem('jeye_custom_endpoint');
+      aiProviderSelect.value = 'gemini';
+      customApiKeyInput.value = '';
+      customModelInput.value = '';
+      customEndpointInput.value = '';
+      syncProviderModalFields();
+      updateProviderBadge();
+      showToast('Reset to default settings.');
+      apiKeyModal.classList.add('hidden');
+    });
+
+    // --- History Drawer Management ---
+    const historyModal = document.getElementById('historyModal');
+    const historyList = document.getElementById('historyList');
+    const historyCount = document.getElementById('historyCount');
+
+    function updateHistoryBadge() {
+      historyCount.textContent = state.history.length;
+    }
+
+    function saveToHistory(title, mode, markdown) {
+      const entry = {
+        id: Date.now(),
+        title: title || 'Untitled Capture',
+        mode,
+        markdown,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      state.history.unshift(entry);
+      if (state.history.length > 20) state.history.pop();
+      try {
+        localStorage.setItem('jeye_history', JSON.stringify(state.history));
+      } catch (e) {}
+      updateHistoryBadge();
+    }
+
+    function renderHistoryList() {
+      if (state.history.length === 0) {
+        historyList.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">No saved conversions yet.</p>`;
+        return;
+      }
+
+      historyList.innerHTML = state.history.map(item => `
+        <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 hover:border-indigo-400 transition cursor-pointer history-item" data-id="${item.id}">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">${item.title}</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 uppercase">${item.mode}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 font-mono">${item.markdown.replace(/<[^>]+>|[#*`]/g, '').slice(0, 110)}...</p>
+          <div class="text-[10px] text-slate-400 mt-1.5">${item.timestamp}</div>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.history-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = Number(el.dataset.id);
+          const found = state.history.find(h => h.id === id);
+          if (found) {
+            markdownEditor.value = found.markdown;
+            state.imageName = found.title;
+            updateLivePreview();
+            historyModal.classList.add('hidden');
+            showToast('Loaded from history');
+          }
+        });
+      });
+    }
+
+    document.getElementById('historyBtn').addEventListener('click', () => {
+      renderHistoryList();
+      historyModal.classList.remove('hidden');
+    });
+
+    document.getElementById('closeHistoryBtn').addEventListener('click', () => {
+      historyModal.classList.add('hidden');
+    });
+
+    document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+      state.history = [];
+      localStorage.removeItem('jeye_history');
+      updateHistoryBadge();
+      renderHistoryList();
+      showToast('History cleared');
+    });
+
+    updateHistoryBadge();
+  </script>
+</body>
+</html>
