@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="55%" stop-color="#6d28d9" />
+      <stop offset="100%" stop-color="#312e81" />
+    </linearGradient>
+    <linearGradient id="eyeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e0e7ff" />
+    </linearGradient>
+    <linearGradient id="irisGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded App Tile Background -->
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#bgGrad)" />
+
+  <!-- Subtle Document Grid Accents -->
+  <g opacity="0.16" stroke="#ffffff" stroke-width="6" stroke-linecap="round">
+    <line x1="112" y1="120" x2="210" y2="120" />
+    <line x1="112" y1="146" x2="176" y2="146" />
+    <line x1="302" y1="366" x2="400" y2="366" />
+    <line x1="336" y1="392" x2="400" y2="392" />
+  </g>
+
+  <!-- Stylized J-Eye Vision Contour -->
+  <path
+    d="M84 256 C132 172, 200 144, 256 144 C312 144, 380 172, 428 256 C380 340, 312 368, 256 368 C200 368, 132 340, 84 256 Z"
+    fill="url(#eyeGrad)"
+  />
+
+  <!-- Iris & Pupil -->
+  <circle cx="256" cy="256" r="74" fill="url(#irisGrad)" />
+  <circle cx="256" cy="256" r="34" fill="#0f172a" />
+
+  <!-- Catchlight Sparkle -->
+  <circle cx="234" cy="234" r="14" fill="#ffffff" opacity="0.95" />
+  <circle cx="278" cy="274" r="6" fill="#ffffff" opacity="0.75" />
+
+  <!-- Corner Scan Brackets -->
+  <g stroke="#a5b4fc" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M96 152 V116 H132" />
+    <path d="M416 152 V116 H380" />
+    <path d="M96 360 V396 H132" />
+    <path d="M416 360 V396 H380" />
+  </g>
+</svg>
